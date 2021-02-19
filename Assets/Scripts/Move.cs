@@ -5,18 +5,24 @@ using UnityEngine;
 public class Move : MonoBehaviour
 {
 	public Rigidbody rb;
+	public Transform cam;
 	private float speed = 9;
 	private Vector3 movement;
+	private Vector3 moveDir;
 
 	private Vector3 jump;
-	public bool isGrounded;
-	private float jumpforce = 8000;
+	private bool IsJumpPressed;
+	private bool IsFlowPressed;
+	private bool IsPushPressed;
+	private float jumpforce = 14000;
 
+    public bool isGrounded;
 	public Transform GroundCheck;
-	public float groundDistance = 0.4f;
+	public float groundDistance = 0.3f;
 	public LayerMask groundMask;
 
-	private float turnspeed = 0.1f;
+	private float turnsmoothtime = 0.1f;
+	private float turnvelocity;
 
 	private bool canpush = false;
 
@@ -25,30 +31,88 @@ public class Move : MonoBehaviour
 		rb = GetComponent<Rigidbody>();
 	}
 
-	void CharacterMove(Vector3 vector)
+	void CharacterMove()
 	{
-		movement = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
-		rb.MovePosition(transform.position + vector * speed * Time.fixedDeltaTime);
+		float x = Input.GetAxisRaw("Horizontal");
+		float y = Input.GetAxisRaw("Vertical");
+		movement = new Vector3(x, 0, y);
+		moveDir = new Vector3(x, 0, y).normalized;
+
+		//movement = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
 		if (movement != Vector3.zero)
 		{
-			transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(movement), turnspeed);
+			movement = cam.TransformDirection(movement);
+			movement.y = 0;
+			moveDir = cam.TransformDirection(moveDir);
+			moveDir.y = 0;
+			transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(moveDir), turnsmoothtime);
+			//moveDir = cam.transform.forward * movement.z + cam.transform.right * movement.x;
+			//moveDir = transform.InverseTransformDirection(moveDir);
+			//float targetAngle = Mathf.Atan2(movement.x, movement.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
+			//float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnvelocity, turnsmoothtime);
+			//transform.rotation = Quaternion.Euler(0f, angle, 0f);
+			//moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
 		}
+		rb.MovePosition(transform.position + movement * speed * Time.fixedDeltaTime);
 	}
 
 	void Jump()
 	{
 		jump = new Vector3(0, jumpforce, 0);
-		if (isGrounded == true && Input.GetButtonDown("Jump"))
+		if (isGrounded == true && IsJumpPressed == true)
 		{
+			IsJumpPressed = false;
 			rb.AddForce(jump);
+		}
+		if (isGrounded == false && rb.velocity.y < -1f && IsFlowPressed == true)
+        {
+			IsFlowPressed = false;
+			Physics.gravity = new Vector3(0f, -1f, 0f);
+        }
+        else
+        {
+			Physics.gravity = new Vector3(0f, -9.81f, 0f);
 		}
 	}
 
-    private void OnTriggerEnter(Collider other)
+	private void addforceto()
+    {
+		if (IsPushPressed == true)
+		{
+			IsPushPressed = false;
+			rb.AddForce(new Vector3(0, 0, -20000));
+		}
+	}
+
+    private void Update()
+	{
+		if(Input.GetKeyDown(KeyCode.E))
+        {
+			IsPushPressed = true;
+        }
+        if(Input.GetButtonDown("Jump"))
+        {
+			IsJumpPressed = true;
+        }
+		if(Input.GetButton("Jump"))
+        {
+			IsFlowPressed = true;
+        }
+	}
+
+	void FixedUpdate()
+	{
+		isGrounded = Physics.CheckSphere(GroundCheck.position, groundDistance, groundMask);
+		Jump();
+		CharacterMove();
+		addforceto();
+	}
+	
+	private void OnTriggerEnter(Collider other)
     {
 		if (other.gameObject.tag == "jumppad")
 		{
-			jumpforce = 20000;
+			jumpforce = 23000;
 		}
 		else if (other.gameObject.tag == "speedup")
 		{
@@ -82,24 +146,5 @@ public class Move : MonoBehaviour
 		{
 			canpush = false;
 		}
-	}
-
-	private void pushplayer()
-    {
-		if (canpush == true && Input.GetKeyDown(KeyCode.E))
-		{
-			rb.AddForce(new Vector3(0, 0, -20000));
-		}
-	}
-    private void Update()
-	{
-		isGrounded = Physics.CheckSphere(GroundCheck.position, groundDistance, groundMask);
-		Jump();
-		pushplayer();
-	}
-
-	void FixedUpdate()
-	{
-		CharacterMove(movement);
 	}
 }

@@ -8,6 +8,8 @@ public class PickUp : MonoBehaviour
     [SerializeField] private GameObject torch;
     private bool hasTorch = false;
 
+    private GameObject collideWith = null;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -31,6 +33,14 @@ public class PickUp : MonoBehaviour
             DropItem();
         }
 
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            if (!hasTorch)
+            {
+                hasTorch = true;
+                collideWith.SetActive(false);
+            }
+        }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -46,10 +56,9 @@ public class PickUp : MonoBehaviour
             //    }
             //}
 
-            if (!hasTorch)
+            if (!hasTorch && collideWith == null)
             {
-                hasTorch = true;
-                other.gameObject.SetActive(false);
+                collideWith = other.gameObject;
             }
         }
 
