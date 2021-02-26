@@ -5,10 +5,11 @@ using UnityEngine;
 public class PickUp : MonoBehaviour
 {
     private SphereCollider sphereCollider;
-    [SerializeField] private GameObject torch;
-    private bool hasTorch = false;
+    public bool hasItem = false;
 
     private GameObject collideWith = null;
+    private GameObject itemOnHand;
+    [SerializeField] private GameObject handSlot;
 
     // Start is called before the first frame update
     void Start()
@@ -19,15 +20,6 @@ public class PickUp : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (hasTorch)
-        {
-            torch.SetActive(true);
-        }
-        else
-        {
-            torch.SetActive(false);
-        }
-
         if (Input.GetKeyDown(KeyCode.F))
         {
             DropItem();
@@ -35,10 +27,16 @@ public class PickUp : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.E))
         {
-            if (!hasTorch)
+            if (!hasItem && collideWith != null)
             {
-                hasTorch = true;
-                collideWith.SetActive(false);
+                hasItem = true;
+                itemOnHand = collideWith;
+                collideWith = null;
+
+                itemOnHand.transform.parent = handSlot.transform;
+                itemOnHand.transform.localPosition = new Vector3(0, 0, 0);
+                itemOnHand.transform.localRotation = Quaternion.Euler(0, 0, 0);
+                itemOnHand.GetComponent<PickUpItem>().PickedUp = true;
             }
         }
     }
@@ -47,28 +45,33 @@ public class PickUp : MonoBehaviour
     {
         if (other.tag == "Item")
         {
-            //if (Input.GetKeyDown(KeyCode.E))
-            //{
-            //    if (!hasTorch)
-            //    {
-            //        hasTorch = true;
-            //        other.gameObject.SetActive(false);
-            //    }
-            //}
-
-            if (!hasTorch && collideWith == null)
+            if (!hasItem && collideWith == null)
             {
                 collideWith = other.gameObject;
             }
         }
+    }
 
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.tag == "Item")
+        {
+            if (!hasItem && collideWith != null)
+            {
+                collideWith = null;
+            }
+        }
     }
 
     private void DropItem()
     {
-        if (hasTorch)
+        if (hasItem)
         {
-            hasTorch = false;
+            hasItem = false;
+            itemOnHand.transform.parent = null;
+            itemOnHand.transform.position = new Vector3(transform.position.x, 1, transform.position.z);
+            itemOnHand.GetComponent<PickUpItem>().PickedUp = false;
+            itemOnHand = null;
         }
     }
 

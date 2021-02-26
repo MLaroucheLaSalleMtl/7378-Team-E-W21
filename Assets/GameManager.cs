@@ -6,6 +6,8 @@ public class GameManager : MonoBehaviour
 {
     private static GameManager _instance;
 
+    private bool lockedCursor = false;
+
     public static GameManager Instance
     {
         get
@@ -22,5 +24,34 @@ public class GameManager : MonoBehaviour
     void Awake()
     {
         DontDestroyOnLoad(gameObject);
+    }
+
+    private void Start()
+    {
+        LockMouse();
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            LockMouse();
+        }
+    }
+
+    private void LockMouse()
+    {
+        if (!lockedCursor)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            lockedCursor = true;
+        }
+        else if (lockedCursor)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            lockedCursor = false;
+        }
     }
 }
